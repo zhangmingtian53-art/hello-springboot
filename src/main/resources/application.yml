@@ -1,0 +1,28 @@
+server:
+  port: 8084
+
+spring:
+  # 本地开发配置放在 application-local.yml（已被 .gitignore 排除，不会提交敏感信息）
+  config:
+    import: optional:application-local.yml
+  datasource:
+    # MySQL 8 的驱动类名中间有个 cj，别抄成老教程里的 com.mysql.jdbc.Driver
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 库名必须是 qing，和建表 SQL 里创建的库名完全一致
+    url: ${DB_URL:jdbc:mysql://localhost:3306/qing?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+
+  thymeleaf:
+    prefix: classpath:/templates/
+    # 注意：Controller 里 return "main.html" 已经带了 .html，
+    # 所以这里 suffix 必须留空，否则会拼成 main.html.html 找不到页面
+    suffix: ''
+    cache: false
+
+# 任务8：换成 MyBatis-Plus 后，配置节点从 mybatis 改为 mybatis-plus
+# （写成 mybatis 的话 MP 读不到，好在 MP 驼峰转换默认开启，不影响功能）
+mybatis-plus:
+  configuration:
+    # 控制台打印真正执行的 SQL，调试用（任务8 提交要求截图终端输出）
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

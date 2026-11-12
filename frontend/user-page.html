@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>用户信息 - 前后端分离分页演示</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: #f0f2f5;
+    color: #303133;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  .app { max-width: 1240px; margin: 0 auto; display: flex; gap: 16px; align-items: flex-start; }
+
+  /* ---------- 左侧菜单（模拟后台管理系统外壳） ---------- */
+  .aside {
+    width: 176px; flex: 0 0 176px; background: #2b3648; border-radius: 10px;
+    padding: 16px 0; color: #c8d0dd; min-height: 560px;
+  }
+  .aside .brand {
+    color: #fff; font-size: 15px; font-weight: 600; padding: 0 20px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 10px;
+  }
+  .aside .brand span { color: #8fa3c0; font-size: 11px; display: block; font-weight: 400; margin-top: 4px; }
+  .aside .item {
+    padding: 10px 20px; font-size: 13.5px; cursor: pointer; border-left: 3px solid transparent;
+    display: flex; align-items: center; gap: 9px;
+  }
+  .aside .item:hover { background: rgba(255,255,255,.05); color: #fff; }
+  .aside .item.on { background: rgba(64,158,255,.16); border-left-color: #409eff; color: #fff; }
+  .aside .item .ico { width: 14px; height: 14px; border-radius: 3px; background: #55688a; flex: 0 0 14px; }
+  .aside .item.on .ico { background: #409eff; }
+
+  /* ---------- 右侧主区 ---------- */
+  .main { flex: 1; min-width: 0; }
+  .card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,21,41,.06); }
+
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid #ebeef5;
+  }
+  .header h2 { font-size: 16px; font-weight: 600; }
+  .header .user { font-size: 13px; color: #909399; display: flex; align-items: center; gap: 8px; }
+  .header .avatar {
+    width: 26px; height: 26px; border-radius: 50%; background: #409eff;
+    color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center;
+  }
+
+  .toolbar { padding: 14px 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .toolbar input {
+    height: 32px; padding: 0 11px; border: 1px solid #dcdfe6; border-radius: 6px;
+    font-size: 13px; outline: none; width: 180px; transition: border-color .2s;
+  }
+  .toolbar input:focus { border-color: #409eff; }
+  .btn {
+    height: 32px; padding: 0 15px; border-radius: 6px; border: 1px solid #dcdfe6;
+    background: #fff; color: #606266; font-size: 13px; cursor: pointer; transition: all .2s;
+  }
+  .btn:hover { color: #409eff; border-color: #c6e2ff; background: #ecf5ff; }
+  .btn.primary { background: #409eff; border-color: #409eff; color: #fff; }
+  .btn.primary:hover { background: #66b1ff; border-color: #66b1ff; }
+  .btn.mini { height: 26px; padding: 0 10px; font-size: 12px; }
+
+  /* ---------- 表格 ---------- */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th {
+    background: #fafafa; color: #606266; font-weight: 600; text-align: left;
+    padding: 11px 12px; border-bottom: 1px solid #ebeef5; white-space: nowrap;
+  }
+  tbody td { padding: 11px 12px; border-bottom: 1px solid #ebeef5; color: #606266; }
+  tbody tr:hover { background: #f5f7fa; }
+  tbody td.id { color: #909399; width: 64px; }
+  .empty { padding: 60px 0; text-align: center; color: #909399; font-size: 13px; }
+  .tag {
+    display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 12px;
+    background: #ecf5ff; color: #409eff; border: 1px solid #d9ecff;
+  }
+  .tag.admin { background: #fef0f0; color: #f56c6c; border-color: #fde2e2; }
+
+  /* ---------- 分页 ---------- */
+  .pager {
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 8px; padding: 14px 20px; font-size: 13px; color: #606266; flex-wrap: wrap;
+  }
+  .pager .total { margin-right: auto; color: #909399; }
+  .pager select {
+    height: 28px; border: 1px solid #dcdfe6; border-radius: 4px;
+    font-size: 13px; color: #606266; background: #fff; padding: 0 4px; outline: none; cursor: pointer;
+  }
+  .pager .pg {
+    min-width: 28px; height: 28px; padding: 0 6px; border-radius: 4px; border: none;
+    background: #f4f4f5; color: #606266; font-size: 13px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; transition: all .2s;
+  }
+  .pager .pg:hover:not(:disabled):not(.on) { color: #409eff; }
+  .pager .pg.on { background: #409eff; color: #fff; font-weight: 600; cursor: default; }
+  .pager .pg:disabled { color: #c0c4cc; cursor: not-allowed; }
+  .pager .jump { display: flex; align-items: center; gap: 5px; }
+  .pager .jump input {
+    width: 44px; height: 28px; text-align: center; border: 1px solid #dcdfe6;
+    border-radius: 4px; font-size: 13px; outline: none;
+  }
+  .pager .jump input:focus { border-color: #409eff; }
+
+  /* ---------- 底部状态条：让「数据真的来自后端」可见 ---------- */
+  .status {
+    margin-top: 12px; padding: 11px 16px; border-radius: 8px; font-size: 12.5px;
+    background: #f4f8ff; border: 1px solid #d9ecff; color: #4a6b90;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .status.ok { background: #f0f9eb; border-color: #e1f3d8; color: #5b8c3a; }
+  .status.err { background: #fef0f0; border-color: #fde2e2; color: #c45656; }
+  .status code {
+    background: rgba(0,0,0,.05); padding: 2px 6px; border-radius: 3px;
+    font-family: Consolas, monospace; font-size: 12px;
+  }
+  .loading { opacity: .5; pointer-events: none; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 左侧菜单：纯装饰，为了像书上的后台管理系统 -->
+  <div class="aside">
+    <div class="brand">后台管理系统<span>Spring Boot + Vue</span></div>
+    <div class="item"><i class="ico"></i>首页</div>
+    <div class="item"><i class="ico"></i>数据</div>
+    <div class="item on"><i class="ico"></i>用户信息</div>
+    <div class="item"><i class="ico"></i>角色</div>
+    <div class="item"><i class="ico"></i>菜单</div>
+    <div class="item"><i class="ico"></i>首页二</div>
+    <div class="item"><i class="ico"></i>角色二</div>
+    <div class="item"><i class="ico"></i>菜单二</div>
+    <div class="item"><i class="ico"></i>题目三</div>
+    <div class="item"><i class="ico"></i>题目四</div>
+  </div>
+
+  <div class="main">
+    <div class="card">
+      <div class="header">
+        <h2>用户信息</h2>
+        <div class="user"><span>张三</span><div class="avatar">张</div></div>
+      </div>
+
+      <div class="toolbar">
+        <input id="kw" placeholder="请输入用户名" />
+        <button class="btn primary" onclick="doSearch()">搜索</button>
+        <button class="btn" onclick="resetPager()">重置</button>
+        <button class="btn" onclick="loadPage()">刷新</button>
+      </div>
+
+      <div id="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:64px">ID</th>
+              <th>账号</th>
+              <th>密码</th>
+              <th>电话</th>
+              <th>邮箱</th>
+              <th>角色</th>
+              <th>地址</th>
+              <th style="width:150px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="pager">
+        <span class="total">共 <b id="total">0</b> 条</span>
+        <select id="sizeSel" onchange="changeSize(this.value)">
+          <option value="5">5 条/页</option>
+          <option value="10">10 条/页</option>
+          <option value="20">20 条/页</option>
+        </select>
+        <button class="pg" id="prev" onclick="go(cur - 1)">‹</button>
+        <span id="pages" style="display:flex;gap:8px"></span>
+        <button class="pg" id="next" onclick="go(cur + 1)">›</button>
+        <span class="jump">前往 <input id="jumpTo" type="number" min="1" onkeydown="if(event.key==='Enter')jump()" onblur="jump()" /> 页</span>
+      </div>
+    </div>
+
+    <div class="status" id="status">正在请求后端…</div>
+  </div>
+</div>
+
+<script>
+/* =============================================================
+   页面数据定义（关卡4 第一步）
+   ============================================================= */
+const BASE_URL = 'http://localhost:8084';   // 后端地址，端口必须和后端 server.port 一致
+
+let cur = 1;        // 当前页码
+let size = 5;       // 每页条数
+let total = 0;      // 后端返回的总条数
+let keyword = '';   // 搜索关键字
+
+/* =============================================================
+   封装加载数据方法（关卡4 第二步）
+   ============================================================= */
+async function loadPage() {
+    const url = `${BASE_URL}/user/page?pageNum=${cur}&pageSize=${size}`;
+    document.getElementById('status').className = 'status';
+    document.getElementById('status').innerHTML = '请求中：<code>' + url + '</code>';
+
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const json = await res.json();
+
+        // 后端约定返回 { data: [...], total: N }
+        total = json.total;
+
+        // 如果当前页已经超出范围（例如删了数据），自动退回最后一页
+        const maxPage = Math.max(1, Math.ceil(total / size));
+        if (cur > maxPage) { cur = maxPage; return loadPage(); }
+
+        renderTable(json.data, json.total);
+        renderPager();
+
+        document.getElementById('status').className = 'status ok';
+        document.getElementById('status').innerHTML =
+            '✔ 数据来自后端 <code>' + url + '</code> ｜ 本页 ' + json.data.length +
+            ' 条，总记录数 <b>' + json.total + '</b>';
+    } catch (e) {
+        document.getElementById('tbody').innerHTML =
+            '<tr><td colspan="8" class="empty">加载失败：' + e.message + '</td></tr>';
+        document.getElementById('status').className = 'status err';
+        document.getElementById('status').innerHTML =
+            '✘ 请求失败：' + e.message +
+            ' ｜ 请确认后端已启动、端口为 8084、CorsConfig 已配置且重启过。';
+    }
+}
+
+/* =============================================================
+   渲染表格
+   prop 名必须和后端 JSON 的字段名一字不差：
+   username / password / phone / email / role / address
+   （写错的话接口返回正常，但表格是空白 —— 这就是「数据对但表格不渲染」）
+   ============================================================= */
+function renderTable(rows, totalCount) {
+    const tbody = document.getElementById('tbody');
+    if (!rows || rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="empty">暂无数据</td></tr>';
+        document.getElementById('total').textContent = totalCount;
+        return;
+    }
+    tbody.innerHTML = rows.map(u => `
+        <tr>
+            <td class="id">${u.id ?? ''}</td>
+            <td>${esc(u.username)}</td>
+            <td>${esc(u.password)}</td>
+            <td>${esc(u.phone)}</td>
+            <td>${esc(u.email)}</td>
+            <td>${u.role ? `<span class="tag ${u.role.includes('ADMIN') ? 'admin' : ''}">${esc(u.role)}</span>` : ''}</td>
+            <td>${esc(u.address)}</td>
+            <td>
+                <button class="btn mini" onclick="detail(${u.id})">详情</button>
+                <button class="btn mini" onclick="edit(${u.id})">编辑</button>
+            </td>
+        </tr>`).join('');
+    document.getElementById('total').textContent = totalCount;
+}
+
+function esc(v) {
+    if (v === null || v === undefined) return '';
+    return String(v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+/* =============================================================
+   渲染分页组件
+   ============================================================= */
+function renderPager() {
+    const maxPage = Math.max(1, Math.ceil(total / size));
+    document.getElementById('prev').disabled = cur <= 1;
+    document.getElementById('next').disabled = cur >= maxPage;
+    document.getElementById('jumpTo').value = cur;
+    document.getElementById('jumpTo').max = maxPage;
+
+    // 页码条：总页数少就全显示；多的话 1 ... 当前±2 ... 末页
+    const nums = [];
+    if (maxPage <= 7) {
+        for (let i = 1; i <= maxPage; i++) nums.push(i);
+    } else {
+        nums.push(1);
+        if (cur > 3) nums.push('...');
+        for (let i = Math.max(2, cur - 2); i <= Math.min(maxPage - 1, cur + 2); i++) nums.push(i);
+        if (cur < maxPage - 2) nums.push('...');
+        nums.push(maxPage);
+    }
+    document.getElementById('pages').innerHTML = nums.map(n =>
+        n === '...'
+            ? '<span style="color:#c0c4cc;line-height:28px">···</span>'
+            : `<button class="pg ${n === cur ? 'on' : ''}" onclick="go(${n})">${n}</button>`
+    ).join('');
+}
+
+function go(p) {
+    const maxPage = Math.max(1, Math.ceil(total / size));
+    if (p < 1 || p > maxPage || p === cur) return;
+    cur = p;
+    loadPage();
+}
+
+function jump() {
+    const inp = document.getElementById('jumpTo');
+    const p = parseInt(inp.value, 10);
+    if (!isNaN(p)) go(Math.min(Math.max(p, 1), Math.max(1, Math.ceil(total / size))));
+    else inp.value = cur;
+}
+
+function changeSize(s) {
+    size = parseInt(s, 10);
+    cur = 1;               // 改每页条数必须回到第 1 页，否则页码会错乱
+    loadPage();
+}
+
+function doSearch() {
+    keyword = document.getElementById('kw').value.trim();
+    // 本周作业不含模糊查询（任务书说留到下节课），这里只是把关键字记下来，
+    // 后端有 /user/search?username= 可以按需改成调用它。
+    resetPager();
+}
+
+function resetPager() {
+    cur = 1;
+    document.getElementById('kw').value = '';
+    loadPage();
+}
+
+function detail(id) { alert('详情 id = ' + id + '\n（可自行接 GET /user/' + id + '）'); }
+function edit(id)   { alert('编辑 id = ' + id + '\n（可自行接 PUT /user/update）'); }
+
+/* =============================================================
+   页面初始化调用（关卡4 第三步）
+   ============================================================= */
+loadPage();
+</script>
+</body>
+</html>

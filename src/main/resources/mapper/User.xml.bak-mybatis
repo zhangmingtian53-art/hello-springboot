@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace 必须写 UserMapper 接口的全限定名，本项目是 com.example.mapper（教程里是 com.example.demo.mapper，不要照抄） -->
+<mapper namespace="com.example.mapper.UserMapper">
+
+    <!-- 与 UserMapper.update(User user) 方法对应，id 必须等于方法名 -->
+    <update id="update">
+        UPDATE zmt_user
+        <!-- 表名是 zmt_user，不是教程里的 sys_user -->
+        <set>
+            <!-- <set> 会自动去掉最后多余的逗号，所以这里每个 if 都放心带逗号 -->
+            <if test="username != null">username = #{username},</if>
+            <if test="password != null">password = #{password},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="nickname != null">nickname = #{nickname},</if>
+            <if test="address != null">address = #{address},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
+            <if test="role != null">role = #{role},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+</mapper>

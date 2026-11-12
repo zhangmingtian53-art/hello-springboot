@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>登录</title>
+</head>
+<body>
+    <h1>登录</h1>
+
+    <!-- 从后端传过来的 msg，没传就不显示 -->
+    <span th:text="${msg}"></span>
+
+    <!-- action="login" 提交到 /login，对应 TestController 里的 @PostMapping("/login") -->
+    <form action="login" method="post">
+        <table border="1px">
+            <tr>
+                <td>用户名：</td>
+                <td><input type="text" name="username"/></td>
+            </tr>
+            <tr>
+                <td>密码：</td>
+                <td><input type="password" name="password"/></td>
+            </tr>
+            <tr>
+                <td colspan="2" align="center">
+                    <input type="submit" value="登录"/>
+                </td>
+            </tr>
+        </table>
+    </form>
+</body>
+</html>
